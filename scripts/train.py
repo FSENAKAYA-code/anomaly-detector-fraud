@@ -3,6 +3,7 @@
 from sklearn.datasets import make_classification
 
 from fraud.experiment import run_fraud_experiment
+from fraud.unsupervised import run_unsupervised_anomaly
 
 
 def main() -> None:
@@ -13,7 +14,9 @@ def main() -> None:
         weights=[0.97, 0.03],
         random_state=42,
     )
-    print(run_fraud_experiment(X, y, random_state=42))
+    print("class_weighted_classifier:", run_fraud_experiment(X, y, random_state=42))
+    print("isolation_forest:", run_unsupervised_anomaly(X, y, random_state=42))
+    print("one_class_svm:", run_unsupervised_anomaly(X, y, algorithm="one_class_svm"))
 
 
 if __name__ == "__main__":

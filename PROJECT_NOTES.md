@@ -1,5 +1,3 @@
 # Domain implementation notes
 
-A fraud-pattern learning scaffold for synthetic or authorized data. It reports precision, recall, and F1 and makes no claim that a model can establish fraud.
-
-The shared baseline in `src/fraud/` is executable now. Domain-specific model implementations are planned work and must be evaluated using documented data splits.
+The supervised baseline uses class-weighted random forests. Isolation Forest and One-Class SVM alternatives fit only normal training rows, select a threshold on validation labels, and report test precision/recall/F1. Unsupervised loss fields are clearly labeled score proxies.

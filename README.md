@@ -28,6 +28,12 @@ The demo uses generated toy data only. Replace it with data you are allowed to u
 - Fit preprocessing steps on training data only. Use validation results for model selection; report the test result once for the chosen configuration.
 - Check the project's `src/fraud/` code and tests before adapting it to real data.
 
+## Domain workflow
+
+- The demo is generated and deliberately imbalanced. It compares a class-weighted random forest with Isolation Forest and One-Class SVM baselines.
+- Unsupervised models fit only normal training rows; a decision threshold is selected on validation labels and evaluated once on the held-out test partition. The reported unsupervised loss fields are score/F1 proxies, not differentiable training losses.
+- An anomaly score is a review signal, not proof of fraud. Use authorized, protected data and report precision/recall at a documented operating threshold.
+
 ## Repository layout
 
 ```text

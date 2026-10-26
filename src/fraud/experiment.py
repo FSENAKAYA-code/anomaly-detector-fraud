@@ -3,7 +3,7 @@
 from typing import Any
 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, log_loss, precision_score, recall_score
 
 from fraud.splits import split_data
 
@@ -17,6 +17,14 @@ def run_fraud_experiment(X: Any, y: Any, *, random_state: int = 42) -> dict[str,
         n_jobs=1,
     )
     model.fit(parts.X_train, parts.y_train)
+    train_loss = log_loss(
+        parts.y_train, model.predict_proba(parts.X_train), labels=model.classes_
+    )
+    validation_loss = log_loss(
+        parts.y_validation,
+        model.predict_proba(parts.X_validation),
+        labels=model.classes_,
+    )
     validation_predictions = model.predict(parts.X_validation)
     validation_f1 = f1_score(
         parts.y_validation, validation_predictions, average="binary", zero_division=0
@@ -28,6 +36,8 @@ def run_fraud_experiment(X: Any, y: Any, *, random_state: int = 42) -> dict[str,
     model.fit(X_final, y_final)
     predictions = model.predict(parts.X_test)
     return {
+        "train_loss": float(train_loss),
+        "validation_loss": float(validation_loss),
         "validation_f1": float(validation_f1),
         "test_precision": float(
             precision_score(parts.y_test, predictions, zero_division=0)
