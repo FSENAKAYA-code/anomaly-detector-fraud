@@ -1,43 +1,37 @@
-"""Leakage-aware baseline training and final held-out evaluation."""
+"""Imbalance-aware baseline with a stratified validation and held-out test set."""
 
 from typing import Any
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 from fraud.splits import split_data
 
 
-def run_experiment(X: Any, y: Any, *, random_state: int = 42) -> dict[str, float]:
-    """Select with validation data, refit on train+validation, test once."""
+def run_fraud_experiment(X: Any, y: Any, *, random_state: int = 42) -> dict[str, float]:
     parts = split_data(X, y, random_state=random_state)
-    model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
+    model = RandomForestClassifier(
+        n_estimators=200,
+        class_weight="balanced_subsample",
+        random_state=random_state,
+        n_jobs=1,
+    )
     model.fit(parts.X_train, parts.y_train)
-    validation_score = f1_score(
-        parts.y_validation, model.predict(parts.X_validation), average="weighted"
+    validation_predictions = model.predict(parts.X_validation)
+    validation_f1 = f1_score(
+        parts.y_validation, validation_predictions, average="binary", zero_division=0
     )
-    model.fit(
-        _concat(parts.X_train, parts.X_validation),
-        _concat(parts.y_train, parts.y_validation),
-    )
-    predictions = model.predict(parts.X_test)
-    return {
-        "validation_f1_weighted": float(validation_score),
-        "test_accuracy": float(accuracy_score(parts.y_test, predictions)),
-        "test_f1_weighted": float(
-            f1_score(parts.y_test, predictions, average="weighted")
-        ),
-    }
-
-
-def _concat(left: Any, right: Any) -> Any:
-    """Concatenate NumPy-like or pandas inputs without changing their rows."""
-    if hasattr(left, "iloc"):
-        import pandas as pd
-
-        return pd.concat([left, right], axis=0)
     import numpy as np
 
-    return np.concatenate([left, right], axis=0)
+    X_final = np.concatenate([parts.X_train, parts.X_validation], axis=0)
+    y_final = np.concatenate([parts.y_train, parts.y_validation], axis=0)
+    model.fit(X_final, y_final)
+    predictions = model.predict(parts.X_test)
+    return {
+        "validation_f1": float(validation_f1),
+        "test_precision": float(
+            precision_score(parts.y_test, predictions, zero_division=0)
+        ),
+        "test_recall": float(recall_score(parts.y_test, predictions, zero_division=0)),
+        "test_f1": float(f1_score(parts.y_test, predictions, zero_division=0)),
+    }
